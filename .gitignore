@@ -1,0 +1,11 @@
+node_modules/
+target/
+.anchor/
+circuit/build/
+backend/dist/
+ui/dist/
+.env
+backend/src/config/vkey.json
+**/*.zkey
+**/*.ptau
+**/*.wtns
