@@ -1,0 +1,146 @@
+{
+  "version": "0.1.0",
+  "name": "zklocation",
+  "instructions": [
+    {
+      "name": "approveAuthority",
+      "accounts": [
+        { "name": "whitelistEntry", "isMut": true, "isSigner": false },
+        { "name": "programAdmin", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "authority", "type": "publicKey" },
+        { "name": "label", "type": "string" }
+      ]
+    },
+    {
+      "name": "revokeAuthority",
+      "accounts": [
+        { "name": "whitelistEntry", "isMut": true, "isSigner": false },
+        { "name": "programAdmin", "isMut": true, "isSigner": true }
+      ],
+      "args": []
+    },
+    {
+      "name": "submitRegion",
+      "accounts": [
+        { "name": "regionPda", "isMut": true, "isSigner": false },
+        { "name": "authority", "isMut": true, "isSigner": true },
+        { "name": "whitelistEntry", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "regionId", "type": { "array": ["u8", 16] } },
+        { "name": "name", "type": "string" },
+        { "name": "centroidLat", "type": "i64" },
+        { "name": "centroidLon", "type": "i64" },
+        { "name": "radiusM", "type": "u32" }
+      ]
+    },
+    {
+      "name": "updateRegion",
+      "accounts": [
+        { "name": "regionPda", "isMut": true, "isSigner": false },
+        { "name": "authority", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "name", "type": { "option": "string" } },
+        { "name": "centroidLat", "type": { "option": "i64" } },
+        { "name": "centroidLon", "type": { "option": "i64" } },
+        { "name": "radiusM", "type": { "option": "u32" } }
+      ]
+    },
+    {
+      "name": "deleteRegion",
+      "accounts": [
+        { "name": "regionPda", "isMut": true, "isSigner": false },
+        { "name": "authority", "isMut": true, "isSigner": true }
+      ],
+      "args": []
+    },
+    {
+      "name": "registerNullifier",
+      "accounts": [
+        { "name": "nullifierPda", "isMut": true, "isSigner": false },
+        { "name": "backendAuthority", "isMut": true, "isSigner": true },
+        { "name": "regionPda", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
+        { "name": "regionId", "type": { "array": ["u8", 16] } },
+        { "name": "slot", "type": "u64" }
+      ]
+    },
+    {
+      "name": "verifyRegionMembership",
+      "accounts": [
+        { "name": "nullifierPda", "isMut": false, "isSigner": false },
+        { "name": "regionPda", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
+        { "name": "regionId", "type": { "array": ["u8", 16] } }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "RegionAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "regionId", "type": { "array": ["u8", 16] } },
+          { "name": "name", "type": "string" },
+          { "name": "centroidLat", "type": "i64" },
+          { "name": "centroidLon", "type": "i64" },
+          { "name": "radiusM", "type": "u32" },
+          { "name": "authority", "type": "publicKey" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "NullifierAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
+          { "name": "regionId", "type": { "array": ["u8", 16] } },
+          { "name": "usedAtSlot", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "WhitelistEntry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "authority", "type": "publicKey" },
+          { "name": "label", "type": "string" },
+          { "name": "approvedAtSlot", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "NameTooLong", "msg": "Name exceeds 64 bytes" },
+    { "code": 6001, "name": "LabelTooLong", "msg": "Authority label exceeds 64 bytes" },
+    { "code": 6002, "name": "InvalidRadius", "msg": "Radius must be 1-100000 metres" },
+    { "code": 6003, "name": "Unauthorized", "msg": "Signer is not the region authority" },
+    { "code": 6004, "name": "NotProgramAdmin", "msg": "Caller is not the program admin" },
+    { "code": 6005, "name": "AlreadyWhitelisted", "msg": "Whitelist entry already exists for this pubkey" },
+    { "code": 6006, "name": "NotWhitelisted", "msg": "Caller has no whitelist entry" },
+    { "code": 6007, "name": "NullifierAlreadyUsed", "msg": "Nullifier has already been registered" },
+    { "code": 6008, "name": "NullifierNotFound", "msg": "NullifierAccount not found" },
+    { "code": 6009, "name": "RegionMismatch", "msg": "Nullifier region_id does not match region PDA" },
+    { "code": 6010, "name": "RegionNotFound", "msg": "RegionAccount not found" },
+    { "code": 6011, "name": "SlotTooOld", "msg": "Proof slot is outside the accepted window" }
+  ],
+  "metadata": {
+    "address": "11111111111111111111111111111111"
+  }
+}
