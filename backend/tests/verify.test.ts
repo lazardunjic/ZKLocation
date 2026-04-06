@@ -96,14 +96,10 @@ describe("POST /verify — verifier not loaded (Step 1 guard)", () => {
 });
 
 describe("GET /health", () => {
-  test("returns ok", async () => {
+  test("returns 503 degraded when circuit not loaded", async () => {
     const res = await request(app).get("/health");
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe("ok");
-  });
-
-  test("verifier shows false when circuit not loaded", async () => {
-    const res = await request(app).get("/health");
+    expect(res.status).toBe(503);
+    expect(res.body.status).toBe("degraded");
     expect(res.body.verifier).toBe(false);
   });
 });

@@ -1,12 +1,6 @@
 import fs from "fs";
 import path from "path";
 
-function require_env(key: string): string {
-  const val = process.env[key];
-  if (!val) throw new Error(`Missing required env var: ${key}`);
-  return val;
-}
-
 function optional_env(key: string, fallback: string): string {
   return process.env[key] ?? fallback;
 }

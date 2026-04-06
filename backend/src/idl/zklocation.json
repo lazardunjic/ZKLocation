@@ -1,115 +1,694 @@
 {
-  "version": "0.1.0",
-  "name": "zklocation",
+  "address": "xRkuEGnTm4EiP1JFZM3no8KqhP6REQC43RqkdzUcXWy",
+  "metadata": {
+    "name": "zklocation",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
   "instructions": [
     {
-      "name": "approveAuthority",
+      "name": "approve_authority",
+      "discriminator": [
+        175,
+        85,
+        83,
+        13,
+        45,
+        209,
+        149,
+        87
+      ],
       "accounts": [
-        { "name": "whitelistEntry", "isMut": true, "isSigner": false },
-        { "name": "programAdmin", "isMut": true, "isSigner": true },
-        { "name": "systemProgram", "isMut": false, "isSigner": false }
+        {
+          "name": "whitelist_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  104,
+                  105,
+                  116,
+                  101,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": [
-        { "name": "authority", "type": "publicKey" },
-        { "name": "label", "type": "string" }
+        {
+          "name": "authority",
+          "type": "pubkey"
+        },
+        {
+          "name": "label",
+          "type": "string"
+        }
       ]
     },
     {
-      "name": "revokeAuthority",
+      "name": "delete_region",
+      "discriminator": [
+        21,
+        13,
+        106,
+        121,
+        124,
+        153,
+        237,
+        222
+      ],
       "accounts": [
-        { "name": "whitelistEntry", "isMut": true, "isSigner": false },
-        { "name": "programAdmin", "isMut": true, "isSigner": true }
+        {
+          "name": "region_pda",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "region_pda.region_id",
+                "account": "RegionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
       ],
       "args": []
     },
     {
-      "name": "submitRegion",
+      "name": "register_nullifier",
+      "discriminator": [
+        217,
+        133,
+        173,
+        12,
+        122,
+        111,
+        238,
+        86
+      ],
       "accounts": [
-        { "name": "regionPda", "isMut": true, "isSigner": false },
-        { "name": "authority", "isMut": true, "isSigner": true },
-        { "name": "whitelistEntry", "isMut": false, "isSigner": false },
-        { "name": "systemProgram", "isMut": false, "isSigner": false }
+        {
+          "name": "nullifier_pda",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  117,
+                  108,
+                  108,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "nullifier_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "region_pda",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "region_pda.region_id",
+                "account": "RegionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "backend_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": [
-        { "name": "regionId", "type": { "array": ["u8", 16] } },
-        { "name": "name", "type": "string" },
-        { "name": "centroidLat", "type": "i64" },
-        { "name": "centroidLon", "type": "i64" },
-        { "name": "radiusM", "type": "u32" }
+        {
+          "name": "nullifier_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "region_id",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "slot",
+          "type": "u64"
+        }
       ]
     },
     {
-      "name": "updateRegion",
-      "accounts": [
-        { "name": "regionPda", "isMut": true, "isSigner": false },
-        { "name": "authority", "isMut": false, "isSigner": true }
+      "name": "revoke_authority",
+      "discriminator": [
+        233,
+        254,
+        239,
+        15,
+        49,
+        183,
+        105,
+        21
       ],
-      "args": [
-        { "name": "name", "type": { "option": "string" } },
-        { "name": "centroidLat", "type": { "option": "i64" } },
-        { "name": "centroidLon", "type": { "option": "i64" } },
-        { "name": "radiusM", "type": { "option": "u32" } }
-      ]
-    },
-    {
-      "name": "deleteRegion",
       "accounts": [
-        { "name": "regionPda", "isMut": true, "isSigner": false },
-        { "name": "authority", "isMut": true, "isSigner": true }
+        {
+          "name": "whitelist_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  104,
+                  105,
+                  116,
+                  101,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "whitelist_entry.authority",
+                "account": "WhitelistEntry"
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": []
     },
     {
-      "name": "registerNullifier",
+      "name": "submit_region",
+      "discriminator": [
+        65,
+        174,
+        231,
+        40,
+        224,
+        194,
+        129,
+        217
+      ],
       "accounts": [
-        { "name": "nullifierPda", "isMut": true, "isSigner": false },
-        { "name": "backendAuthority", "isMut": true, "isSigner": true },
-        { "name": "regionPda", "isMut": false, "isSigner": false },
-        { "name": "systemProgram", "isMut": false, "isSigner": false }
+        {
+          "name": "region_pda",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "region_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "whitelist_entry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  104,
+                  105,
+                  116,
+                  101,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
       ],
       "args": [
-        { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
-        { "name": "regionId", "type": { "array": ["u8", 16] } },
-        { "name": "slot", "type": "u64" }
+        {
+          "name": "region_id",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "centroid_lat",
+          "type": "i64"
+        },
+        {
+          "name": "centroid_lon",
+          "type": "i64"
+        },
+        {
+          "name": "radius_m",
+          "type": "u32"
+        }
       ]
     },
     {
-      "name": "verifyRegionMembership",
+      "name": "update_region",
+      "discriminator": [
+        50,
+        154,
+        61,
+        166,
+        131,
+        65,
+        92,
+        20
+      ],
       "accounts": [
-        { "name": "nullifierPda", "isMut": false, "isSigner": false },
-        { "name": "regionPda", "isMut": false, "isSigner": false }
+        {
+          "name": "region_pda",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "region_pda.region_id",
+                "account": "RegionAccount"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
       ],
       "args": [
-        { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
-        { "name": "regionId", "type": { "array": ["u8", 16] } }
+        {
+          "name": "name",
+          "type": {
+            "option": "string"
+          }
+        },
+        {
+          "name": "centroid_lat",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "centroid_lon",
+          "type": {
+            "option": "i64"
+          }
+        },
+        {
+          "name": "radius_m",
+          "type": {
+            "option": "u32"
+          }
+        }
+      ]
+    },
+    {
+      "name": "verify_region_membership",
+      "discriminator": [
+        192,
+        233,
+        155,
+        215,
+        51,
+        36,
+        117,
+        160
+      ],
+      "accounts": [
+        {
+          "name": "nullifier_pda",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  110,
+                  117,
+                  108,
+                  108,
+                  105,
+                  102,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "nullifier_hash"
+              }
+            ]
+          }
+        },
+        {
+          "name": "region_pda",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  103,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "region_pda.region_id",
+                "account": "RegionAccount"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "nullifier_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "region_id",
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
+        }
       ]
     }
   ],
   "accounts": [
     {
-      "name": "RegionAccount",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          { "name": "regionId", "type": { "array": ["u8", 16] } },
-          { "name": "name", "type": "string" },
-          { "name": "centroidLat", "type": "i64" },
-          { "name": "centroidLon", "type": "i64" },
-          { "name": "radiusM", "type": "u32" },
-          { "name": "authority", "type": "publicKey" },
-          { "name": "bump", "type": "u8" }
-        ]
-      }
+      "name": "NullifierAccount",
+      "discriminator": [
+        250,
+        31,
+        238,
+        177,
+        213,
+        98,
+        48,
+        172
+      ]
     },
+    {
+      "name": "RegionAccount",
+      "discriminator": [
+        212,
+        36,
+        165,
+        65,
+        54,
+        204,
+        128,
+        178
+      ]
+    },
+    {
+      "name": "WhitelistEntry",
+      "discriminator": [
+        51,
+        70,
+        173,
+        81,
+        219,
+        192,
+        234,
+        62
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NameTooLong",
+      "msg": "Name exceeds 64 bytes"
+    },
+    {
+      "code": 6001,
+      "name": "LabelTooLong",
+      "msg": "Authority label exceeds 64 bytes"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidRadius",
+      "msg": "Radius must be 1-100000 meters"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Signer is not the region authority"
+    },
+    {
+      "code": 6004,
+      "name": "NotProgramAdmin",
+      "msg": "Caller is not the program admin"
+    },
+    {
+      "code": 6005,
+      "name": "AlreadyWhitelisted",
+      "msg": "Whitelist entry already exists"
+    },
+    {
+      "code": 6006,
+      "name": "NotWhitelisted",
+      "msg": "Caller has no whitelist entry"
+    },
+    {
+      "code": 6007,
+      "name": "NullifierAlreadyUsed",
+      "msg": "Nullifier has already been registered"
+    },
+    {
+      "code": 6008,
+      "name": "NullifierNotFound",
+      "msg": "NullifierAccount not found"
+    },
+    {
+      "code": 6009,
+      "name": "RegionMismatch",
+      "msg": "Nullifier region_id does not match region PDA"
+    },
+    {
+      "code": 6010,
+      "name": "RegionNotFound",
+      "msg": "RegionAccount not found"
+    },
+    {
+      "code": 6011,
+      "name": "SlotTooOld",
+      "msg": "Proof slot is outside accepted window"
+    }
+  ],
+  "types": [
     {
       "name": "NullifierAccount",
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "nullifierHash", "type": { "array": ["u8", 32] } },
-          { "name": "regionId", "type": { "array": ["u8", 16] } },
-          { "name": "usedAtSlot", "type": "u64" },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "nullifier_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "region_id",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "used_at_slot",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegionAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "region_id",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "centroid_lat",
+            "type": "i64"
+          },
+          {
+            "name": "centroid_lon",
+            "type": "i64"
+          },
+          {
+            "name": "radius_m",
+            "type": "u32"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
         ]
       }
     },
@@ -118,29 +697,24 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "authority", "type": "publicKey" },
-          { "name": "label", "type": "string" },
-          { "name": "approvedAtSlot", "type": "u64" },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "label",
+            "type": "string"
+          },
+          {
+            "name": "approved_at_slot",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
         ]
       }
     }
-  ],
-  "errors": [
-    { "code": 6000, "name": "NameTooLong", "msg": "Name exceeds 64 bytes" },
-    { "code": 6001, "name": "LabelTooLong", "msg": "Authority label exceeds 64 bytes" },
-    { "code": 6002, "name": "InvalidRadius", "msg": "Radius must be 1-100000 metres" },
-    { "code": 6003, "name": "Unauthorized", "msg": "Signer is not the region authority" },
-    { "code": 6004, "name": "NotProgramAdmin", "msg": "Caller is not the program admin" },
-    { "code": 6005, "name": "AlreadyWhitelisted", "msg": "Whitelist entry already exists for this pubkey" },
-    { "code": 6006, "name": "NotWhitelisted", "msg": "Caller has no whitelist entry" },
-    { "code": 6007, "name": "NullifierAlreadyUsed", "msg": "Nullifier has already been registered" },
-    { "code": 6008, "name": "NullifierNotFound", "msg": "NullifierAccount not found" },
-    { "code": 6009, "name": "RegionMismatch", "msg": "Nullifier region_id does not match region PDA" },
-    { "code": 6010, "name": "RegionNotFound", "msg": "RegionAccount not found" },
-    { "code": 6011, "name": "SlotTooOld", "msg": "Proof slot is outside the accepted window" }
-  ],
-  "metadata": {
-    "address": "11111111111111111111111111111111"
-  }
+  ]
 }

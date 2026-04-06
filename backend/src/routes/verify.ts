@@ -88,7 +88,7 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
     try {
       valid = await verifyProof(proof, public_inputs);
     } catch {
-      throw new AppError(400, "PROOF_INVALID", "Proof verification failed.");
+      throw new AppError(503, "SERVICE_UNAVAILABLE", "Proof verification failed internally.");
     }
     if (!valid) {
       throw new AppError(400, "PROOF_INVALID", "Proof is invalid.");
