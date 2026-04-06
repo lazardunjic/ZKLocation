@@ -74,12 +74,7 @@ export function getProgram(): Program {
   const wallet = new Wallet(keypair);
   const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
 
-  // Inject program ID from config into IDL metadata so Program constructor picks it up
-  const idl = {
-    ...(require("../idl/zklocation.json") as Idl),
-    metadata: { address: config.solana.programId },
-  };
-  _program = new Program(idl, provider);
+  _program = new Program(require("../idl/zklocation.json") as Idl, provider);
   return _program;
 }
 
@@ -115,8 +110,9 @@ export async function getRegionAccount(region_id: Uint8Array) {
   const pda = regionPda(region_id);
   try {
     return await accounts(getProgram()).regionAccount.fetch(pda);
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Account does not exist")) return null;
+    throw err;
   }
 }
 
@@ -124,8 +120,9 @@ export async function getNullifierAccount(nullifier_hash: Uint8Array) {
   const pda = nullifierPda(nullifier_hash);
   try {
     return await accounts(getProgram()).nullifierAccount.fetch(pda);
-  } catch {
-    return null;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Account does not exist")) return null;
+    throw err;
   }
 }
 
