@@ -55,17 +55,14 @@ pub fn handler(
 
     //ovde gledam da li acc postoji
     if nullifier.used_at_slot != 0 {
-        require!(
-            nullifier.nullifier_hash == nullifier_hash,
-            ZkLocationError::NullifierAlreadyUsed
-        );
-        require!(
-            nullifier.region_id == region_id,
-            ZkLocationError::NullifierAlreadyUsed
-        );
-        return Ok(()); 
-    }
-
+    require!(
+        nullifier.nullifier_hash == nullifier_hash &&
+        nullifier.region_id == region_id,
+        ZkLocationError::NullifierAlreadyUsed
+    );
+    //Isti hash i region
+    return Ok(());
+}
     nullifier.nullifier_hash = nullifier_hash;
     nullifier.region_id = region_id;
     nullifier.used_at_slot = current_slot;
