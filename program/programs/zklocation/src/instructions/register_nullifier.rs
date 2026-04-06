@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 use crate::state::{NullifierAccount, RegionAccount};
 use crate::errors::ZkLocationError;
-use crate::instructions::approve_authority::PROGRAM_ADMIN;
 
 pub const SLOT_WINDOW: u64 = 150;
+pub const PROGRAM_ADMIN: &str = "97qfEG9PgZJPy6DjgUZ3c6ziYyswCeCAZqHLGHmMB2Eg";
 
 #[derive(Accounts)]
 #[instruction(nullifier_hash: [u8; 32])]
