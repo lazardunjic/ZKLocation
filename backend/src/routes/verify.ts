@@ -102,8 +102,19 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
     });
 
     if (nullifierInfo) {
-      // Idempotent re-issue: if nullifier exists with same slot, re-issue JWT (skip to step 7).
-      // Full idempotency check requires Anchor deserialization — simplified here.
+      // Idempotent re-issue: nullifier exists with same slot means the backend crashed after
+      // step 6 succeeded on-chain but before step 7 returned the JWT. Re-issue instead of failing.
+      if (BigInt(nullifierInfo.usedAtSlot as bigint) === slot_field) {
+        const { jwt, expires_at } = await signJwt({
+          nullifier_hash: public_inputs.nullifier_hash,
+          region_id: public_inputs.region_id,
+          region_name,
+          solana_slot: public_inputs.slot_field,
+          expires_in_seconds: expires_in_seconds,
+        });
+        res.status(200).json({ jwt, expires_at } satisfies VerifyResponse);
+        return;
+      }
       throw new AppError(409, "NULLIFIER_USED", "This nullifier has already been registered.");
     }
 

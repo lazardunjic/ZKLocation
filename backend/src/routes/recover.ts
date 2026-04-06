@@ -21,14 +21,14 @@ recoverRouter.get("/recover", recoverLimiter, async (req, res, next) => {
     }
     const { nullifier_hash } = parsed.data;
 
-    if (!isJwtSignerReady()) {
-      throw new AppError(503, "SERVICE_UNAVAILABLE", "JWT signer not ready.");
-    }
-
     // TODO: verify Bearer signature over nullifier_hash once client keypair scheme is decided (spec open issue #1). DO NOT deploy without this.
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       throw new AppError(400, "INVALID_INPUTS", "Authorization: Bearer <signature> required.");
+    }
+
+    if (!isJwtSignerReady()) {
+      throw new AppError(503, "SERVICE_UNAVAILABLE", "JWT signer not ready.");
     }
     console.warn(`[recover] Signature verification not yet implemented. nullifier_hash=${nullifier_hash}`);
 
