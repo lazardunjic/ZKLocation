@@ -148,17 +148,52 @@ describe("GET /jwks", () => {
 });
 
 describe("GET /recover", () => {
+  const nullifier_hash = "ab".repeat(32);
+  const public_key = "cd".repeat(32);
+  const valid_sig = "ef".repeat(64);
+
   test("missing nullifier_hash → 400 INVALID_INPUTS", async () => {
     const res = await request(app)
-      .get("/recover")
-      .set("Authorization", "Bearer dGVzdA==");
+      .get(`/recover?public_key=${public_key}`)
+      .set("Authorization", `Bearer ${valid_sig}`);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("INVALID_INPUTS");
+  });
+
+  test("missing public_key → 400 INVALID_INPUTS", async () => {
+    const res = await request(app)
+      .get(`/recover?nullifier_hash=${nullifier_hash}`)
+      .set("Authorization", `Bearer ${valid_sig}`);
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("INVALID_INPUTS");
   });
 
   test("missing Authorization header → 400 INVALID_INPUTS", async () => {
-    const res = await request(app).get(`/recover?nullifier_hash=${"ab".repeat(32)}`);
+    const res = await request(app).get(`/recover?nullifier_hash=${nullifier_hash}&public_key=${public_key}`);
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("INVALID_INPUTS");
+  });
+
+  test("invalid signature → 401 UNAUTHORIZED", async () => {
+    const res = await request(app)
+      .get(`/recover?nullifier_hash=${nullifier_hash}&public_key=${public_key}`)
+      .set("Authorization", `Bearer ${valid_sig}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe("UNAUTHORIZED");
+  });
+});
+
+describe("Rate limiting", () => {
+  test("POST /verify → 429 after exceeding limit", async () => {
+    // Fresh app instance so previous tests don't consume this limiter's quota
+    const freshApp = createApp();
+    const responses = await Promise.all(
+      Array.from({ length: 11 }, () =>
+        request(freshApp).post("/verify").send(VALID_BODY),
+      ),
+    );
+    const limited = responses.filter((r) => r.status === 429);
+    expect(limited.length).toBeGreaterThan(0);
+    expect(limited[0].body.error).toBe("RATE_LIMITED");
   });
 });

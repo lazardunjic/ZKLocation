@@ -68,7 +68,8 @@ export type ErrorCode =
   | "SOLANA_ERROR"
   | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR"
-  | "INVALID_COORDS";
+  | "INVALID_COORDS"
+  | "UNAUTHORIZED";
 
 // ── On-chain account shapes (mirroring Anchor structs) ───────────────────────
 export interface RegionAccount {

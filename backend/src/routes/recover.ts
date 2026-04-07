@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import crypto from "crypto";
 import { getCurrentSlot, getNullifierAccount, SolanaUnavailableError } from "../services/solana.js";
 import { signJwt, isJwtSignerReady } from "../services/jwtSigner.js";
 import { AppError } from "../middleware/errorHandler.js";
@@ -9,28 +10,49 @@ import { getRegionById } from "../services/regionCache.js";
 
 export const recoverRouter = Router();
 
+// Ed25519 SPKI header — prepended to raw 32-byte public key so Node.js crypto can parse it
+const ED25519_SPKI_HEADER = Buffer.from("302a300506032b6570032100", "hex");
+
 const QuerySchema = z.object({
   nullifier_hash: z.string().regex(/^[0-9a-f]{64}$/i, "nullifier_hash must be 32-byte hex"),
+  public_key: z.string().regex(/^[0-9a-f]{64}$/i, "public_key must be 32-byte hex Ed25519 public key"),
 });
+
+function verifySessionSignature(nullifier_hash: string, public_key: string, signature_hex: string): boolean {
+  try {
+    const spkiKey = Buffer.concat([ED25519_SPKI_HEADER, Buffer.from(public_key, "hex")]);
+    const keyObject = crypto.createPublicKey({ key: spkiKey, format: "der", type: "spki" });
+    return crypto.verify(null, Buffer.from(nullifier_hash, "hex"), keyObject, Buffer.from(signature_hex, "hex"));
+  } catch {
+    return false;
+  }
+}
 
 recoverRouter.get("/recover", recoverLimiter, async (req, res, next) => {
   try {
     const parsed = QuerySchema.safeParse(req.query);
     if (!parsed.success) {
-      throw new AppError(400, "INVALID_INPUTS", "nullifier_hash must be 32-byte hex.");
+      throw new AppError(400, "INVALID_INPUTS", parsed.error.issues[0]?.message ?? "Invalid inputs.");
     }
-    const { nullifier_hash } = parsed.data;
+    const { nullifier_hash, public_key } = parsed.data;
 
-    // TODO: verify Bearer signature over nullifier_hash once client keypair scheme is decided (spec open issue #1). DO NOT deploy without this.
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
       throw new AppError(400, "INVALID_INPUTS", "Authorization: Bearer <signature> required.");
+    }
+    const signature = authHeader.slice(7);
+
+    if (!/^[0-9a-f]{128}$/i.test(signature)) {
+      throw new AppError(400, "INVALID_INPUTS", "Signature must be 64-byte hex.");
+    }
+
+    if (!verifySessionSignature(nullifier_hash, public_key, signature)) {
+      throw new AppError(401, "UNAUTHORIZED", "Signature verification failed.");
     }
 
     if (!isJwtSignerReady()) {
       throw new AppError(503, "SERVICE_UNAVAILABLE", "JWT signer not ready.");
     }
-    console.warn(`[recover] Signature verification not yet implemented. nullifier_hash=${nullifier_hash}`);
 
     const nullifier_hash_bytes = Uint8Array.from(Buffer.from(nullifier_hash, "hex"));
 
