@@ -76,7 +76,8 @@ export function getProgram(): Program {
   const wallet = new Wallet(keypair);
   const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
 
-  _program = new Program(require("../idl/zklocation.json") as Idl, provider);
+  const idl = { ...require("../idl/zklocation.json") as Idl, address: config.solana.programId };
+  _program = new Program(idl, provider);
   return _program;
 }
 

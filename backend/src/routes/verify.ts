@@ -29,7 +29,6 @@ const VerifySchema = z.object({
 
 verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
   try {
-    // Step 1: validate inputs
     const parsed = VerifySchema.safeParse(req.body);
     if (!parsed.success) {
       throw new AppError(400, "INVALID_INPUTS", parsed.error.issues[0]?.message ?? "Invalid inputs.");
@@ -43,7 +42,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
       throw new AppError(503, "SERVICE_UNAVAILABLE", "JWT signer not ready.");
     }
 
-    // Step 2: slot window check
     let current_slot: bigint;
     try {
       current_slot = await getCurrentSlot();
@@ -62,7 +60,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
       throw new AppError(400, "SLOT_IN_FUTURE", "slot_field is ahead of current slot.");
     }
 
-    // Step 3: fetch RegionAccount PDA and compare public inputs
     const region_id_bytes = Uint8Array.from(Buffer.from(public_inputs.region_id, "hex"));
     const regionAccount = await getRegionAccount(region_id_bytes).catch((err: unknown) => {
       if (err instanceof SolanaUnavailableError) throw new AppError(503, "SERVICE_UNAVAILABLE", err.message);
@@ -83,7 +80,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
 
     const region_name = (regionAccount.name as string) ?? public_inputs.region_id;
 
-    // Step 4: verify UltraHonk proof
     let valid: boolean;
     try {
       valid = await verifyProof(proof, public_inputs);
@@ -94,7 +90,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
       throw new AppError(400, "PROOF_INVALID", "Proof is invalid.");
     }
 
-    // Step 5: check nullifier PDA
     const nullifier_hash_bytes = Uint8Array.from(Buffer.from(public_inputs.nullifier_hash, "hex"));
     const nullifierInfo = await getNullifierAccount(nullifier_hash_bytes).catch((err: unknown) => {
       if (err instanceof SolanaUnavailableError) throw new AppError(503, "SERVICE_UNAVAILABLE", err.message);
@@ -118,7 +113,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
       throw new AppError(409, "NULLIFIER_USED", "This nullifier has already been registered.");
     }
 
-    // Step 6: register nullifier on-chain
     try {
       await registerNullifier(nullifier_hash_bytes, region_id_bytes, slot_field);
     } catch (err) {
@@ -134,7 +128,6 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
       throw new AppError(500, "SOLANA_ERROR", "Failed to register nullifier on-chain.");
     }
 
-    // Step 7: sign and return JWT
     const { jwt, expires_at } = await signJwt({
       nullifier_hash: public_inputs.nullifier_hash,
       region_id: public_inputs.region_id,

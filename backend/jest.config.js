@@ -9,5 +9,5 @@ export default {
     "^.+\\.ts$": ["ts-jest", { useESM: true, tsconfig: "tsconfig.test.json" }],
   },
   testMatch: ["**/tests/**/*.test.ts"],
-  setupFiles: ["./tests/setup.ts"],
+  setupFiles: ["./tests/setup.js"],
 };

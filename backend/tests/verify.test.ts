@@ -2,6 +2,7 @@ import request from "supertest";
 import crypto from "crypto";
 import { createApp } from "../src/app.js";
 import { signJwt, initJwtSigner } from "../src/services/jwtSigner.js";
+import { initVerifier } from "../src/services/verifier.js";
 
 const app = createApp();
 
@@ -265,15 +266,107 @@ describe("GET /recover — valid Ed25519 signature", () => {
 
 describe("Rate limiting", () => {
   test("POST /verify → 429 after exceeding limit", async () => {
-    // Fresh app instance so previous tests don't consume this limiter's quota
-    const freshApp = createApp();
-    const responses = await Promise.all(
-      Array.from({ length: 11 }, () =>
-        request(freshApp).post("/verify").send(VALID_BODY),
-      ),
-    );
+    // Temporarily disable test mode so skip() returns false and the limiter activates.
+    // try/finally guarantees NODE_ENV is restored even if assertions throw.
+    process.env.NODE_ENV = "production";
+    let responses: import("supertest").Response[] = [];
+    try {
+      const freshApp = createApp();
+      responses = await Promise.all(
+        Array.from({ length: 11 }, () =>
+          request(freshApp).post("/verify").send(VALID_BODY),
+        ),
+      );
+    } finally {
+      process.env.NODE_ENV = "test";
+    }
     const limited = responses.filter((r) => r.status === 429);
     expect(limited.length).toBeGreaterThan(0);
     expect(limited[0].body.error).toBe("RATE_LIMITED");
+  });
+});
+
+// Beograd centar seeded via init_regions on localnet.
+const BEOGRAD_CENTAR = {
+  region_id: "775a4f08b7b9060d328a95aa9f76c668",
+  centroid_lat: 44_787_000,
+  centroid_lon: 20_457_000,
+  radius_m: 5000,
+};
+
+describe("POST /verify — Solana integration (requires localnet + circuit)", () => {
+  let integrationApp: ReturnType<typeof createApp>;
+
+  beforeAll(async () => {
+    await initVerifier();
+    await initJwtSigner();
+    integrationApp = createApp(); // fresh instance — clean rate limiter
+  }, 30_000);
+
+  async function currentSlot(): Promise<string> {
+    const res = await request(integrationApp).get("/slot");
+    return res.body.slot as string;
+  }
+
+  test("slot older than 150 → 400 SLOT_EXPIRED", async () => {
+    const slot = (BigInt(await currentSlot()) - BigInt(200)).toString();
+    const res = await request(integrationApp).post("/verify").send({
+      proof: "ab".repeat(64),
+      public_inputs: { ...BEOGRAD_CENTAR, nullifier_hash: "ab".repeat(32), slot_field: slot },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("SLOT_EXPIRED");
+  });
+
+  test("slot ahead of current → 400 SLOT_IN_FUTURE", async () => {
+    const slot = (BigInt(await currentSlot()) + BigInt(100)).toString();
+    const res = await request(integrationApp).post("/verify").send({
+      proof: "ab".repeat(64),
+      public_inputs: { ...BEOGRAD_CENTAR, nullifier_hash: "ab".repeat(32), slot_field: slot },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("SLOT_IN_FUTURE");
+  });
+
+  test("unknown region_id → 404 REGION_NOT_FOUND", async () => {
+    const slot = await currentSlot();
+    const res = await request(integrationApp).post("/verify").send({
+      proof: "ab".repeat(64),
+      public_inputs: {
+        nullifier_hash: "ab".repeat(32),
+        region_id: "ff".repeat(16),
+        centroid_lat: 44_787_000,
+        centroid_lon: 20_457_000,
+        radius_m: 5000,
+        slot_field: slot,
+      },
+    });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("REGION_NOT_FOUND");
+  });
+
+  test("known region_id but wrong centroid → 400 REGION_MISMATCH", async () => {
+    const slot = await currentSlot();
+    const res = await request(integrationApp).post("/verify").send({
+      proof: "ab".repeat(64),
+      public_inputs: {
+        ...BEOGRAD_CENTAR,
+        nullifier_hash: "ab".repeat(32),
+        centroid_lat: 99_000_000, // wrong
+        slot_field: slot,
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("REGION_MISMATCH");
+  });
+
+  test("valid region + current slot + fake proof → 400 PROOF_INVALID", async () => {
+    const slot = await currentSlot();
+    const res = await request(integrationApp).post("/verify").send({
+      proof: "ab".repeat(500),
+      public_inputs: { ...BEOGRAD_CENTAR, nullifier_hash: "ab".repeat(32), slot_field: slot },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("PROOF_INVALID");
   });
 });

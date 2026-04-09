@@ -30,6 +30,21 @@ async function main() {
     program.programId
   );
 
+  // Whitelist authority if not already approved
+  const existing = await provider.connection.getAccountInfo(whitelistPda);
+  if (!existing) {
+    console.log("Approving authority...");
+    await program.methods
+      .approveAuthority(authority, "localnet-init")
+      .accountsPartial({
+        whitelistEntry: whitelistPda,
+        programAdmin: authority,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    console.log("Authority approved.");
+  }
+
   for (const region of regions) {
     // Deterministicki ID — hash od naziva, uvek isti za isti region.
     // Sprecava duplikate ako se skript pokrene vise puta.

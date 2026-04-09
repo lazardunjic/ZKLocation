@@ -27,9 +27,9 @@ export const config = {
   },
 
   rateLimits: {
-    verifyPerMin: 10,
-    recoverPerMin: 5,
-    nearbyPerMin: 60,
+    verifyPerMin: parseInt(optional_env("RATE_LIMIT_VERIFY", "10"), 10),
+    recoverPerMin: parseInt(optional_env("RATE_LIMIT_RECOVER", "5"), 10),
+    nearbyPerMin: parseInt(optional_env("RATE_LIMIT_NEARBY", "60"), 10),
   },
 
   // Slot window: current_slot - 150 <= slot_field <= current_slot (~60 seconds)
