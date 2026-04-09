@@ -56,7 +56,7 @@ async function fetchAllRegions(): Promise<CachedRegion[]> {
 
   // Deduplicate only by region_id (true duplicates from double-submitting the same ID)
   const seen = new Set<string>();
-  return all.filter((r) => {
+  return all.filter((r: any) => {
     if (seen.has(r.region_id)) return false;
     seen.add(r.region_id);
     return true;
