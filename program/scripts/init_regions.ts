@@ -31,7 +31,9 @@ async function main() {
   );
 
   for (const region of regions) {
-    const regionId = Array.from(crypto.randomBytes(16));
+    // Deterministicki ID — hash od naziva, uvek isti za isti region.
+    // Sprecava duplikate ako se skript pokrene vise puta.
+    const regionId = Array.from(crypto.createHash("sha256").update(region.name).digest().subarray(0, 16));
     const regionIdBuf = Buffer.from(regionId);
 
     const [regionPda] = anchor.web3.PublicKey.findProgramAddressSync(

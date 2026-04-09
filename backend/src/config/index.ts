@@ -23,7 +23,7 @@ export const config = {
 
   circuit: {
     path: optional_env("CIRCUIT_PATH", "../circuit/target/circuit.json"),
-    vkPath: optional_env("VK_PATH", "../circuit/target/vk"),
+    vkPath: optional_env("VK_PATH", "../circuit/target/vk/vk"),
     vkVersion: optional_env("VK_VERSION", "1"),
   },
 
@@ -41,6 +41,9 @@ export const config = {
 
   // SOL balance alert threshold for BACKEND_KEYPAIR
   solBalanceAlertThreshold: 1,
+
+  // Set SKIP_NULLIFIER_REGISTRATION=true to bypass on-chain registration (local testing only)
+  skipNullifierRegistration: optional_env("SKIP_NULLIFIER_REGISTRATION", "false") === "true",
 } as const;
 
 export function resolvedPath(p: string): string {

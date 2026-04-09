@@ -45,7 +45,7 @@ function distanceMetres(
 
 async function fetchAllRegions(): Promise<CachedRegion[]> {
   const accounts = await getAllRegionAccounts();
-  return accounts.map(({ account }: { account: Record<string, unknown> }) => ({
+  const all = accounts.map(({ account }: { account: Record<string, unknown> }) => ({
     region_id: Buffer.from(account.regionId as Uint8Array).toString("hex"),
     name: account.name as string,
     centroid_lat: Number(account.centroidLat),
@@ -53,6 +53,14 @@ async function fetchAllRegions(): Promise<CachedRegion[]> {
     radius_m: account.radiusM as number,
     authority: (account.authority as { toBase58(): string }).toBase58(),
   }));
+
+  // Deduplicate only by region_id (true duplicates from double-submitting the same ID)
+  const seen = new Set<string>();
+  return all.filter((r) => {
+    if (seen.has(r.region_id)) return false;
+    seen.add(r.region_id);
+    return true;
+  });
 }
 
 export async function refreshCache(): Promise<void> {
@@ -100,7 +108,35 @@ export function getNearbyRegions(
   }
 
   results.sort((a, b) => a.distance_m - b.distance_m);
-  return results.slice(0, NEARBY_CAP);
+
+  // Among regions with the same name, pick the most precise one the user is inside.
+  // If inside multiple, prefer smallest radius (most precise proof).
+  // If inside none, prefer largest radius (best chance of passing).
+  const byName = new Map<string, RegionSummary>();
+  for (const r of results) {
+    const existing = byName.get(r.name);
+    if (!existing) {
+      byName.set(r.name, r);
+      continue;
+    }
+    const rInside = r.distance_m <= r.radius_m;
+    const existingInside = existing.distance_m <= existing.radius_m;
+    if (rInside && existingInside) {
+      // Both inside — keep the smaller (more precise) one
+      if (r.radius_m < existing.radius_m) byName.set(r.name, r);
+    } else if (rInside && !existingInside) {
+      // Only r is inside — prefer it
+      byName.set(r.name, r);
+    } else if (!rInside && !existingInside) {
+      // Neither inside — keep the larger (better chance)
+      if (r.radius_m > existing.radius_m) byName.set(r.name, r);
+    }
+    // existing inside, r not — keep existing
+  }
+
+  return Array.from(byName.values())
+    .sort((a, b) => a.distance_m - b.distance_m)
+    .slice(0, NEARBY_CAP);
 }
 
 export function getRegionById(region_id_hex: string): CachedRegion | undefined {

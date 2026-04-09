@@ -5,6 +5,8 @@ import { createRequire } from "module";
 import { config, resolvedPath } from "../config/index.js";
 
 const require = createRequire(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const BN = require("bn.js") as new (n: string) => any;
 
 let _connection: Connection | null = null;
 let _usingFallback = false;
@@ -108,6 +110,7 @@ function accounts(program: Program): any {
 
 export async function getRegionAccount(region_id: Uint8Array) {
   const pda = regionPda(region_id);
+  console.log(`[solana] getRegionAccount pda=${pda.toBase58()} programId=${config.solana.programId}`);
   try {
     return await accounts(getProgram()).regionAccount.fetch(pda);
   } catch (err) {
@@ -164,7 +167,7 @@ export async function registerNullifier(
     .registerNullifier(
       Array.from(nullifier_hash),
       Array.from(region_id),
-      slot,
+      new BN(slot.toString()),
     )
     .accounts({
       nullifierPda: nullifier_pda,

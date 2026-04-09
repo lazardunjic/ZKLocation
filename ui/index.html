@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZKLocation — Prove You Were There</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg:        #0a0e1a;
+        --surface:   #111827;
+        --border:    #1f2a3c;
+        --accent:    #00e676;
+        --accent-dim:#00b35a;
+        --text:      #e2e8f0;
+        --muted:     #64748b;
+        --error:     #f87171;
+        --warn:      #fbbf24;
+        --radius:    10px;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+
+      header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: var(--accent);
+      }
+
+      header p {
+        margin-top: 0.4rem;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 560px;
+        margin-bottom: 1.25rem;
+      }
+
+      .card h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 1rem;
+      }
+
+      .step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 50%;
+        background: var(--border);
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-right: 0.5rem;
+      }
+
+      button.primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        border-radius: var(--radius);
+        padding: 0.65rem 1.4rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      button.primary:hover:not(:disabled) { background: #33ec8b; }
+      button.primary:disabled { background: var(--accent-dim); cursor: not-allowed; opacity: 0.6; }
+
+      .region-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+      .region-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .region-item:hover { border-color: var(--accent); background: rgba(0,230,118,0.04); }
+      .region-item.selected { border-color: var(--accent); background: rgba(0,230,118,0.08); }
+
+      .region-name { font-weight: 600; }
+      .region-dist { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+      .region-radius { font-size: 0.8rem; color: var(--muted); }
+
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+        padding: 0.5rem 0;
+      }
+
+      .status-line.ok { color: var(--accent); }
+      .status-line.err { color: var(--error); }
+      .status-line.warn { color: var(--warn); }
+
+      .spinner {
+        width: 1rem; height: 1rem;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .jwt-box {
+        background: #050810;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.72rem;
+        word-break: break-all;
+        line-height: 1.5;
+        color: #94d8b5;
+        margin-bottom: 0.75rem;
+        max-height: 140px;
+        overflow-y: auto;
+      }
+
+      .jwt-meta {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 0.75rem;
+      }
+
+      button.copy {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
+        padding: 0.4rem 0.9rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: border-color 0.15s;
+        margin-right: 0.5rem;
+      }
+      button.copy:hover { border-color: var(--accent); }
+
+      button.reset {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--muted);
+        padding: 0.4rem 0.9rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+      button.reset:hover { border-color: var(--error); color: var(--error); }
+
+      .progress-bar-wrap {
+        width: 100%;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.75rem;
+      }
+      .progress-bar {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      .hidden { display: none !important; }
+      .dimmed { opacity: 0.4; pointer-events: none; }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>ZKLocation</h1>
+      <p>Prove you were there &mdash; reveal nothing else.</p>
+    </header>
+
+    <!-- Step 1: Get Location -->
+    <div class="card" id="card-location">
+      <h2><span class="step-num">1</span>Your Location</h2>
+      <button class="primary" id="btn-gps">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        </svg>
+        Get My Location
+      </button>
+      <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:1rem;">
+        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem;">Or enter coordinates manually:</div>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <input id="input-lat" type="number" step="0.0001" placeholder="Latitude (e.g. 44.787)"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:0.45rem 0.7rem;font-size:0.88rem;width:180px;" />
+          <input id="input-lon" type="number" step="0.0001" placeholder="Longitude (e.g. 20.457)"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:0.45rem 0.7rem;font-size:0.88rem;width:180px;" />
+          <button class="primary" id="btn-manual" style="padding:0.45rem 1rem;">Use</button>
+        </div>
+      </div>
+      <div class="status-line hidden" id="status-gps"></div>
+    </div>
+
+    <!-- Step 2: Choose Region -->
+    <div class="card dimmed hidden" id="card-regions">
+      <h2><span class="step-num">2</span>Select Region to Prove</h2>
+      <div class="status-line hidden" id="status-regions"></div>
+      <div class="region-list" id="region-list"></div>
+    </div>
+
+    <!-- Step 3: Generate Proof -->
+    <div class="card dimmed hidden" id="card-prove">
+      <h2><span class="step-num">3</span>Generate ZK Proof</h2>
+      <div id="selected-region-info" style="margin-bottom:1rem; font-size:0.9rem; color:var(--muted)"></div>
+      <button class="primary" id="btn-prove" disabled>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Generate Proof
+      </button>
+      <div class="status-line hidden" id="status-prove"></div>
+      <div class="progress-bar-wrap hidden" id="progress-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Result -->
+    <div class="card hidden" id="card-result">
+      <h2><span class="step-num">4</span>Location JWT</h2>
+      <div class="jwt-meta" id="jwt-meta"></div>
+      <div class="jwt-box" id="jwt-box"></div>
+      <button class="copy" id="btn-copy">Copy JWT</button>
+      <button class="reset" id="btn-reset">New Proof</button>
+    </div>
+
+    <footer>
+      Your exact GPS coordinates never leave this device.
+      Proof verified on Solana.
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

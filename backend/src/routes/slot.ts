@@ -12,6 +12,7 @@ slotRouter.get("/slot", async (_req, res, next) => {
       slot: slot.toString(),
       timestamp_ms: Date.now(),
     };
+    res.set("Cache-Control", "no-store");
     res.json(body);
   } catch (err) {
     if (err instanceof SolanaUnavailableError) {
