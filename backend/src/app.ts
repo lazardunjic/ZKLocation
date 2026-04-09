@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { healthRouter } from "./routes/health.js";
 import { slotRouter } from "./routes/slot.js";
@@ -10,6 +11,16 @@ import { recoverRouter } from "./routes/recover.js";
 
 export function createApp() {
   const app = express();
+
+  app.set("trust proxy", 1);
+
+  app.use(cors({
+    origin: [
+      "https://zk-location.vercel.app",
+      "http://localhost:5173",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  }));
 
   app.use(express.json({ limit: "2mb" }));
 
