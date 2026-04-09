@@ -8,8 +8,8 @@ ZKLocation allows users to prove their presence at a specific location without r
 
 ## Demo
 
-> UI: _link after deployment_  
-> Backend: _link after deployment_
+> UI: [ZK-L:ocation](https://zk-location.vercel.app)  
+> Backend: [link](https://zklocation.onrender.com)
 
 ---
 
