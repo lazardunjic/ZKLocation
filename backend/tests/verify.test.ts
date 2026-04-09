@@ -1,5 +1,7 @@
 import request from "supertest";
+import crypto from "crypto";
 import { createApp } from "../src/app.js";
+import { signJwt, initJwtSigner } from "../src/services/jwtSigner.js";
 
 const app = createApp();
 
@@ -180,6 +182,84 @@ describe("GET /recover", () => {
       .set("Authorization", `Bearer ${valid_sig}`);
     expect(res.status).toBe(401);
     expect(res.body.error).toBe("UNAUTHORIZED");
+  });
+});
+
+describe("JWT claims", () => {
+  beforeAll(async () => {
+    await initJwtSigner();
+  });
+
+  test("signed JWT contains correct claims", async () => {
+    const nullifier_hash = "ab".repeat(32);
+    const region_id = "cd".repeat(16);
+
+    const { jwt, expires_at } = await signJwt({
+      nullifier_hash,
+      region_id,
+      region_name: "Test Region",
+      solana_slot: "12345",
+      expires_in_seconds: 3600,
+    });
+
+    // Decode payload without verifying signature (we trust our own signer)
+    const payload = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
+
+    expect(payload.sub).toBe(nullifier_hash);
+    expect(payload.region_id).toBe(region_id);
+    expect(payload.region_name).toBe("Test Region");
+    expect(payload.zk_verified).toBe(true);
+    expect(payload.solana_slot).toBe("12345");
+    expect(payload.exp).toBe(expires_at);
+    expect(typeof payload.iat).toBe("number");
+    expect(payload.exp - payload.iat).toBe(3600);
+  });
+
+  test("expires_in_seconds capped at 3600", async () => {
+    const { jwt } = await signJwt({
+      nullifier_hash: "ab".repeat(32),
+      region_id: "cd".repeat(16),
+      region_name: "Test",
+      solana_slot: "1",
+      expires_in_seconds: 9999,
+    });
+
+    const payload = JSON.parse(Buffer.from(jwt.split(".")[1], "base64url").toString());
+    expect(payload.exp - payload.iat).toBe(3600);
+  });
+
+  test("GET /jwks contains kid matching JWT header", async () => {
+    const { jwt } = await signJwt({
+      nullifier_hash: "ab".repeat(32),
+      region_id: "cd".repeat(16),
+      region_name: "Test",
+      solana_slot: "1",
+      expires_in_seconds: 3600,
+    });
+
+    const header = JSON.parse(Buffer.from(jwt.split(".")[0], "base64url").toString());
+    const res = await request(app).get("/jwks");
+    const kids = res.body.keys.map((k: { kid: string }) => k.kid);
+    expect(kids).toContain(header.kid);
+  });
+});
+
+describe("GET /recover — valid Ed25519 signature", () => {
+  test("valid signature but nullifier not on-chain → 503 SERVICE_UNAVAILABLE", async () => {
+    // Generate a real Ed25519 keypair
+    const { privateKey, publicKey } = crypto.generateKeyPairSync("ed25519");
+
+    const nullifier_hash_bytes = crypto.randomBytes(32);
+    const nullifier_hash = nullifier_hash_bytes.toString("hex");
+    const public_key = Buffer.from(publicKey.export({ type: "spki", format: "der" })).subarray(12).toString("hex");
+    const signature = crypto.sign(null, nullifier_hash_bytes, privateKey).toString("hex");
+
+    const res = await request(app)
+      .get(`/recover?nullifier_hash=${nullifier_hash}&public_key=${public_key}`)
+      .set("Authorization", `Bearer ${signature}`);
+
+    // Signature is valid, but nullifier doesn't exist on-chain → Solana unavailable or 404
+    expect([503, 404]).toContain(res.status);
   });
 });
 

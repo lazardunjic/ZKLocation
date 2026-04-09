@@ -6,7 +6,7 @@ import { signJwt, isJwtSignerReady } from "../services/jwtSigner.js";
 import { AppError } from "../middleware/errorHandler.js";
 import { verifyLimiter } from "../middleware/rateLimiter.js";
 import { config } from "../config/index.js";
-import type { VerifyRequest, VerifyResponse } from "../types/index.js";
+import type { VerifyResponse } from "../types/index.js";
 
 export const verifyRouter = Router();
 
@@ -119,23 +119,19 @@ verifyRouter.post("/verify", verifyLimiter, async (req, res, next) => {
     }
 
     // Step 6: register nullifier on-chain
-    if (config.skipNullifierRegistration) {
-      console.warn("[verify] SKIP_NULLIFIER_REGISTRATION=true — skipping on-chain registration (local testing only).");
-    } else {
-      try {
-        await registerNullifier(nullifier_hash_bytes, region_id_bytes, slot_field);
-      } catch (err) {
-        // Log nullifier_hash for /recover in case backend crashes after on-chain success.
-        console.error(
-          `[verify] register_nullifier failed. nullifier_hash=${public_inputs.nullifier_hash} ` +
-          `region_id=${public_inputs.region_id} slot=${slot_field}`,
-          err,
-        );
-        if (err instanceof SolanaUnavailableError) {
-          throw new AppError(503, "SERVICE_UNAVAILABLE", err.message);
-        }
-        throw new AppError(500, "SOLANA_ERROR", "Failed to register nullifier on-chain.");
+    try {
+      await registerNullifier(nullifier_hash_bytes, region_id_bytes, slot_field);
+    } catch (err) {
+      // Log nullifier_hash for /recover in case backend crashes after on-chain success.
+      console.error(
+        `[verify] register_nullifier failed. nullifier_hash=${public_inputs.nullifier_hash} ` +
+        `region_id=${public_inputs.region_id} slot=${slot_field}`,
+        err,
+      );
+      if (err instanceof SolanaUnavailableError) {
+        throw new AppError(503, "SERVICE_UNAVAILABLE", err.message);
       }
+      throw new AppError(500, "SOLANA_ERROR", "Failed to register nullifier on-chain.");
     }
 
     // Step 7: sign and return JWT

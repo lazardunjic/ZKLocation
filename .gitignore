@@ -1,5 +1,6 @@
 node_modules/
 target/
+backend/keys/
 .anchor/
 circuit/build/
 backend/dist/

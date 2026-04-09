@@ -1,4 +1,3 @@
-import fs from "fs";
 import path from "path";
 
 function optional_env(key: string, fallback: string): string {
@@ -42,8 +41,6 @@ export const config = {
   // SOL balance alert threshold for BACKEND_KEYPAIR
   solBalanceAlertThreshold: 1,
 
-  // Set SKIP_NULLIFIER_REGISTRATION=true to bypass on-chain registration (local testing only)
-  skipNullifierRegistration: optional_env("SKIP_NULLIFIER_REGISTRATION", "false") === "true",
 } as const;
 
 export function resolvedPath(p: string): string {
