@@ -288,7 +288,7 @@ describe("Rate limiting", () => {
 
 // Beograd centar seeded via init_regions on localnet.
 const BEOGRAD_CENTAR = {
-  region_id: "775a4f08b7b9060d328a95aa9f76c668",
+  region_id: "3fe6cd7e9924085c792e7974402fb620",
   centroid_lat: 44_787_000,
   centroid_lon: 20_457_000,
   radius_m: 5000,
