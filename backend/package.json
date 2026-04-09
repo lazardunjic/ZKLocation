@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp -r src/idl dist/idl",
     "start": "node dist/index.js",
     "generate-keys": "node scripts/generate-jwt-keys.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest"
