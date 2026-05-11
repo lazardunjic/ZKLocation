@@ -16,7 +16,7 @@ export function createApp() {
 
   app.use(cors({
     origin: [
-      "https://zk-location.vercel.app",
+      "https://zkloc.onrender.com",
       "http://localhost:5173",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
